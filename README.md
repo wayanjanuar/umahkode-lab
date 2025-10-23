@@ -71,3 +71,4 @@ protected $routeMiddleware = [
 - Beri tahu di silabus: penilaian otomatis dilakukan dan siswa dapat ajukan banding.
 - Sanitasi artifacts/log sebelum ditampilkan di admin.
 - Terapkan rate-limit submission.
+# deploy kick
