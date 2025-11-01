@@ -7,9 +7,13 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "barryvdh/laravel-dompdf": "^3.1",
+        "doctrine/dbal": "^4.3",
         "google/auth": "^1.48",
+        "illuminate/translation": "^12.0",
         "laravel/framework": "^12.0",
-        "laravel/tinker": "^2.10.1"
+        "laravel/tinker": "^2.10.1",
+        "symfony/translation": "^7.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

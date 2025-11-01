@@ -7,72 +7,61 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Response;
 use App\Models\Assignment;
 use App\Models\Submission;
+use App\Models\Evaluation;
 use App\Jobs\EvaluateSubmission;
 
 class SubmissionController extends Controller
 {
-    /**
-     * (Opsional) Kalau kamu masih butuh halaman list khusus.
-     * Saat ini dashboard siswa sudah menampilkan assignments,
-     * jadi method ini bisa diarahkan ke view dashboard yg sama.
-     */
+
     public function list()
     {
-        $assignments = Assignment::all();
-        // Jika dashboard siswa sudah memuat tabel assignments, pakai view itu:
+        $assignments = \App\Models\Assignment::query()
+            ->withCount([
+                'submissions as my_submit_count' => function ($q) {
+                    $q->where('user_id', auth()->id());
+                }
+            ])
+            ->get();
+
         return view('student.assignments', compact('assignments'));
-        // atau:
-        // return redirect()->route('dashboard');
     }
 
-    /**
-     * Download template soal (jika disediakan path pada assignment).
-     */
     public function downloadTemplate(string $key)
     {
         $a = Assignment::where('key', $key)->firstOrFail();
 
-        if (empty($a->template_path)) {
+        if (!$a->template_path) {
             return back()->with('message', 'Template tidak tersedia untuk soal ini.');
         }
 
         $absPath = resource_path($a->template_path);
-        if (!file_exists($absPath)) {
+        if (!is_file($absPath)) {
             return back()->with('message', 'File template tidak ditemukan di server.');
         }
 
-        // Biar nama file rapi saat diunduh
-        $downloadName = basename($absPath);
-        return Response::download($absPath, $downloadName);
+        return Response::download($absPath, basename($absPath));
     }
 
-    /**
-     * Halaman form submit perbaikan kode.
-     * Catatan: kamu minta "tanpa placeholder", jadi template tidak dipaksakan dimunculkan.
-     */
     public function showSubmitForm(string $key)
     {
         $assignment = Assignment::where('key', $key)->firstOrFail();
 
-        // Ambil hasil evaluasi terakhir user untuk soal ini (jika ada)
-        $evaluation = \App\Models\Evaluation::whereHas('submission', function ($q) use ($assignment) {
+        $evaluation = Evaluation::whereHas('submission', function ($q) use ($assignment) {
             $q->where('assignment_id', $assignment->id)
                 ->where('user_id', auth()->id());
-        })->latest()->first();
+        })
+            ->latest('id')
+            ->first();
 
         return view('student.submit', compact('assignment', 'evaluation'));
     }
 
-    /**
-     * Terima submission siswa & jalankan penilaian.
-     * Kita pakai dispatchSync supaya hasil langsung diproses.
-     */
     public function store(Request $request, string $key)
     {
         $assignment = Assignment::where('key', $key)->firstOrFail();
 
         $validated = $request->validate([
-            'source_code' => ['required', 'string'],
+            'source_code' => ['required', 'string', 'max:200000'], // guard simple
             'language' => ['nullable', 'string', 'max:20'],
         ]);
 
@@ -80,15 +69,14 @@ class SubmissionController extends Controller
             'user_id' => Auth::id(),
             'assignment_id' => $assignment->id,
             'language' => $validated['language'] ?? 'php',
-            'source_code' => $validated['source_code'],
+            'source_code' => trim($validated['source_code']),
             'status' => 'queued',
         ]);
 
-        // Jalankan penilaian langsung (sinkron) agar terasa real-time
-        // Kalau nanti ingin kembali ke queue: ganti ke EvaluateSubmission::dispatch($submission->id);
+        // Penilaian sinkron agar langsung terlihat.
+        // Pastikan .env -> QUEUE_CONNECTION=sync
         EvaluateSubmission::dispatchSync($submission->id);
 
-        // Redirect ke dashboard (karena /assignments sudah kamu hilangkan)
         return redirect()
             ->route('dashboard')
             ->with('message', 'Submission diterima. Sistem sudah menjalankan penilaian otomatis.');

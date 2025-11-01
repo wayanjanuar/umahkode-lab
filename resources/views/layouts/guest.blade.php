@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>Umahkode - Security Lab</title>
+    <title>SS TNI - Security Lab</title>
     <link rel="icon" href="{{ asset('favicon.png') }}" type="image/png">
 
     <!-- Fonts -->
@@ -26,6 +26,6 @@
             {{ $slot }}
         </div>
     </div>
+    <script src="//unpkg.com/alpinejs" defer></script>
 </body>
-
 </html>

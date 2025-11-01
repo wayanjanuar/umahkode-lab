@@ -1,5 +1,5 @@
 <?php
-
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 
@@ -9,8 +9,11 @@ use App\Http\Controllers\Admin\EvaluationController;
 use App\Http\Controllers\Admin\SubmissionAdminController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\ScoreController;
+use App\Http\Controllers\Admin\UserReportController;
 use App\Services\AiGraderGemini;
 use App\Http\Middleware\EnsureStudent;
+
 
 
 Route::get('/', function () {
@@ -68,30 +71,31 @@ Route::middleware(['auth', 'role:admin'])
 
         Route::delete('/students/{user}', [UserManagementController::class, 'destroy'])->name('students.destroy');
         Route::post('/students/{user}/reset', [UserManagementController::class, 'resetPassword'])->name('students.reset');
+
+        Route::get('/penilaian', [ScoreController::class, 'create'])->name('scores.create');
+        Route::post('/penilaian', [ScoreController::class, 'store'])->name('scores.store');
+        Route::get('/penilaian/daftar', [ScoreController::class, 'index'])->name('scores.index');
+
+        // Rekap Nilai Akhir (Admin)
+        Route::get('/scores', [ScoreController::class, 'index'])
+            ->name('scores.index');
+        Route::post('/scores/generate', [ScoreController::class, 'generate'])
+            ->name('scores.generate');
+
+        Route::get('/users/{user}/summary.pdf', [UserReportController::class, 'summaryPdf'])
+            ->name('users.summary.pdf');
+
     });
 
-Route::get('/admin/test-gemini-models', function () {
-    $base = rtrim(config('services.gemini.endpoint'), '/'); // v1beta
-    $key = config('services.gemini.key');
-
-    $resp = Http::get("{$base}/models?key={$key}");
-    if ($resp->failed()) {
-        return response("Gagal memuat daftar model:\n" . $resp->body(), 500)->header('Content-Type', 'text/plain');
-    }
-    return response()->json($resp->json());
+Route::get('/admin/test-ai', function () {
+    $grader = app(\App\Services\AiGraderGemini::class);
+    return response()->json(
+        $grader->evaluate('<?php echo htmlspecialchars($_GET["x"] ?? ""); ?>', 'xss-basic')
+    );
 })->middleware(['auth', 'role:admin']);
 
-Route::get('/admin/test-gemini', function () {
-    /** @var AiGraderGemini $grader */
-    $grader = app(AiGraderGemini::class);
 
-    $res = $grader->evaluate(
-        '<?php echo htmlspecialchars($_GET["x"] ?? ""); ?>',
-        'xss-basic'
-    );
 
-    return response()->json($res);
-});
 
 
 // Auth routes (Breeze)

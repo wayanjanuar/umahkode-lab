@@ -20,7 +20,7 @@
                     </a>
                     <a href="{{ route('admin.students.index') }}"
                         class="inline-flex items-center gap-2 rounded-lg bg-white/15 px-3 py-1.5 text-sm ring-1 ring-white/30 hover:bg-white/25">
-                        👥 Siswa
+                        👥 Casis
                     </a>
                 </div>
             </div>
@@ -94,7 +94,7 @@
                             <tr>
                                 <th class="px-4 py-3 text-left">Waktu</th>
                                 <th class="px-4 py-3 text-left">Assignment</th>
-                                <th class="px-4 py-3 text-left">Siswa</th>
+                                <th class="px-4 py-3 text-left">Casis</th>
                                 <th class="px-4 py-3 text-left">Score</th>
                                 <th class="px-4 py-3 text-left">Aksi</th>
                             </tr>
